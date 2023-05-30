@@ -1,0 +1,81 @@
+#pip install python-docx
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import messagebox
+import PyPDF2
+import docx
+import pyttsx3
+
+def convert_to_audio():
+    # Open file dialog to select a PDF, Word document, or text file
+    file_path = filedialog.askopenfilename()
+
+    if file_path.endswith('.pdf'):
+        # Process PDF
+        pdf_file = open(file_path, 'rb')
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+        pdf_file.close()
+    elif file_path.endswith('.docx'):
+        # Process Word document
+        doc = docx.Document(file_path)
+        paragraphs = [p.text for p in doc.paragraphs]
+        text = '\n'.join(paragraphs)
+    elif file_path.endswith('.txt'):
+        # Process text file
+        with open(file_path, 'r') as file:
+            text = file.read()
+    else:
+        # Unsupported file format
+        return messagebox.showerror("Error", "Unsupported file format!")
+
+    # Convert text to audio
+    engine = pyttsx3.init()
+    output_file = 'output.mp3'
+    engine.save_to_file(text, output_file)
+    engine.runAndWait()
+
+    # Update status label
+    output_label.config(text="Conversion completed!")
+
+    # Enable the download button and exit button
+    download_button.config(state=tk.NORMAL)
+    exit_button.config(state=tk.NORMAL)
+
+def download_audio(file_path):
+    # Open file dialog to select the download location
+    download_path = filedialog.asksaveasfilename(defaultextension='.mp3')
+
+    if download_path:
+        # Move the output file to the download location
+        import shutil
+        shutil.move(file_path, download_path)
+
+def exit_app():
+    if messagebox.askyesno("Exit", "Do you want to exit?"):
+        window.destroy()
+
+# Create the main window
+window = tk.Tk()
+window.title("Text-to-Audio Converter")
+
+# Create a button for file selection
+select_button = tk.Button(window, text="Select File", command=convert_to_audio)
+select_button.pack(pady=15)
+
+# Create a label to display status
+output_label = tk.Label(window, text="")
+output_label.pack()
+
+# Create a button for downloading the audio
+download_button = tk.Button(window, text="Download Audio", state=tk.DISABLED, command=lambda: download_audio('output.mp3'))
+download_button.pack(pady=10)
+
+# Create an exit button
+exit_button = tk.Button(window, text="Exit", state=tk.DISABLED, command=exit_app, fg="white", bg="red")
+exit_button.pack(pady=15)
+
+# Run the main loop
+window.mainloop()
